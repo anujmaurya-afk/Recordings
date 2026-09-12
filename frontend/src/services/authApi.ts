@@ -1,4 +1,4 @@
-const BASE = '/api/auth'
+const BASE = 'https://recordings-ruby.vercel.app/api/auth'
 
 export interface AuthResponse {
   token: string
@@ -41,40 +41,62 @@ export function isAuthenticated(): boolean {
   return !!getToken()
 }
 
-export async function login(email: string, password: string): Promise<AuthResponse> {
+export async function login(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
   const res = await fetch(`${BASE}/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim(), password }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: email.trim(),
+      password,
+    }),
   })
 
   if (!res.ok) {
     let detail = `Login failed (${res.status})`
+
     try {
       const data = await res.json()
       detail = data.detail ?? detail
     } catch {}
+
     throw new Error(detail)
   }
 
   const data: AuthResponse = await res.json()
+
   setSession(data.token, data.email)
+
   return data
 }
 
-export async function register(email: string, password: string): Promise<RegisterResponse> {
+export async function register(
+  email: string,
+  password: string
+): Promise<RegisterResponse> {
   const res = await fetch(`${BASE}/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim(), password }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: email.trim(),
+      password,
+    }),
   })
 
   if (!res.ok) {
     let detail = `Sign up failed (${res.status})`
+
     try {
       const data = await res.json()
       detail = data.detail ?? detail
     } catch {}
+
     throw new Error(detail)
   }
 
@@ -83,6 +105,7 @@ export async function register(email: string, password: string): Promise<Registe
 
 export async function logout(): Promise<void> {
   const token = getToken()
+
   if (token) {
     try {
       await fetch(`${BASE}/logout`, {
@@ -96,12 +119,16 @@ export async function logout(): Promise<void> {
       console.warn('Logout request failed:', err)
     }
   }
+
   clearSession()
 }
 
 export async function getMe(): Promise<UserInfo> {
   const token = getToken()
-  if (!token) throw new Error('Not authenticated')
+
+  if (!token) {
+    throw new Error('Not authenticated')
+  }
 
   const res = await fetch(`${BASE}/me`, {
     headers: {
