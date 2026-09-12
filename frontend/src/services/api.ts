@@ -7,14 +7,19 @@ import type {
   UrlProvider,
 } from '../types'
 
-const BASE = '/api'
+const BASE = 'https://recordings-ruby.vercel.app/api'
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit
+): Promise<T> {
   const token = localStorage.getItem('rc_token')
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(init?.headers as Record<string, string>),
   }
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
@@ -23,14 +28,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers,
   })
+
   if (!res.ok) {
     let detail = `HTTP ${res.status}`
+
     try {
       const body = await res.json()
       detail = body.detail ?? detail
     } catch {}
+
     throw new Error(detail)
   }
+
   return res.json() as Promise<T>
 }
 
@@ -42,7 +51,10 @@ export async function createJobFromUrls(
 ): Promise<CreateJobFromUrlsResponse> {
   return request('/jobs/urls', {
     method: 'POST',
-    body: JSON.stringify({ urls, provider }),
+    body: JSON.stringify({
+      urls,
+      provider,
+    }),
   })
 }
 
@@ -58,30 +70,57 @@ export async function createJobFromFile(params: {
   })
 }
 
-export async function getJob(jobId: string): Promise<JobProgress> {
+export async function getJob(
+  jobId: string
+): Promise<JobProgress> {
   return request(`/jobs/${jobId}`)
 }
 
-export async function listRecentJobs(limit = 10): Promise<JobProgress[]> {
+export async function listRecentJobs(
+  limit = 10
+): Promise<JobProgress[]> {
   return request(`/jobs?limit=${limit}`)
 }
 
 export async function getJobResults(
   jobId: string,
-  params: { page?: number; page_size?: number; status?: string; search?: string }
+  params: {
+    page?: number
+    page_size?: number
+    status?: string
+    search?: string
+  }
 ): Promise<RecordsPage> {
   const q = new URLSearchParams()
-  if (params.page) q.set('page', String(params.page))
-  if (params.page_size) q.set('page_size', String(params.page_size))
-  if (params.status) q.set('status', params.status)
-  if (params.search) q.set('search', params.search)
+
+  if (params.page) {
+    q.set('page', String(params.page))
+  }
+
+  if (params.page_size) {
+    q.set('page_size', String(params.page_size))
+  }
+
+  if (params.status) {
+    q.set('status', params.status)
+  }
+
+  if (params.search) {
+    q.set('search', params.search)
+  }
+
   return request(`/jobs/${jobId}/results?${q}`)
 }
 
-export async function retryFailed(jobId: string, provider?: UrlProvider) {
+export async function retryFailed(
+  jobId: string,
+  provider?: UrlProvider
+) {
   return request(`/jobs/${jobId}/retry`, {
     method: 'POST',
-    body: JSON.stringify({ provider }),
+    body: JSON.stringify({
+      provider,
+    }),
   })
 }
 
@@ -91,15 +130,26 @@ export async function cancelJob(jobId: string) {
   })
 }
 
-export function getDownloadUrl(jobId: string, format: 'csv' | 'excel') {
+export function getDownloadUrl(
+  jobId: string,
+  format: 'csv' | 'excel'
+) {
   const token = localStorage.getItem('rc_token') || ''
-  const q = token ? `?token=${encodeURIComponent(token)}` : ''
+  const q = token
+    ? `?token=${encodeURIComponent(token)}`
+    : ''
+
   return `${BASE}/jobs/${jobId}/download/${format}${q}`
 }
 
-export function getErrorsDownloadUrl(jobId: string) {
+export function getErrorsDownloadUrl(
+  jobId: string
+) {
   const token = localStorage.getItem('rc_token') || ''
-  const q = token ? `?token=${encodeURIComponent(token)}` : ''
+  const q = token
+    ? `?token=${encodeURIComponent(token)}`
+    : ''
+
   return `${BASE}/jobs/${jobId}/download/errors${q}`
 }
 
@@ -119,37 +169,88 @@ export async function getJobErrors(jobId: string) {
 
 // ── File Parsing ─────────────────────────────────────────────────────────────
 
-export async function parseCsv(file: File): Promise<ParsedFileInfo> {
+export async function parseCsv(
+  file: File
+): Promise<ParsedFileInfo> {
   const form = new FormData()
-  form.append('file', file)
-  const token = localStorage.getItem('rc_token')
-  const headers: Record<string, string> = {}
-  if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${BASE}/parse/csv`, { method: 'POST', body: form, headers })
+  form.append('file', file)
+
+  const token = localStorage.getItem('rc_token')
+
+  const headers: Record<string, string> = {}
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const res = await fetch(
+    `${BASE}/parse/csv`,
+    {
+      method: 'POST',
+      body: form,
+      headers,
+    }
+  )
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail ?? `HTTP ${res.status}`)
+
+    throw new Error(
+      body.detail ?? `HTTP ${res.status}`
+    )
   }
+
   return res.json()
 }
 
-export async function parseExcel(file: File, sheetName?: string): Promise<ParsedFileInfo> {
+export async function parseExcel(
+  file: File,
+  sheetName?: string
+): Promise<ParsedFileInfo> {
   const form = new FormData()
-  form.append('file', file)
-  if (sheetName) form.append('sheet_name', sheetName)
-  const token = localStorage.getItem('rc_token')
-  const headers: Record<string, string> = {}
-  if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${BASE}/parse/excel`, { method: 'POST', body: form, headers })
+  form.append('file', file)
+
+  if (sheetName) {
+    form.append('sheet_name', sheetName)
+  }
+
+  const token = localStorage.getItem('rc_token')
+
+  const headers: Record<string, string> = {}
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const res = await fetch(
+    `${BASE}/parse/excel`,
+    {
+      method: 'POST',
+      body: form,
+      headers,
+    }
+  )
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail ?? `HTTP ${res.status}`)
+
+    throw new Error(
+      body.detail ?? `HTTP ${res.status}`
+    )
   }
+
   return res.json()
 }
 
-export async function parseExcelSheet(fileId: string, sheetName: string): Promise<ParsedFileInfo> {
-  return request(`/parse/excel/${fileId}/sheet?sheet_name=${encodeURIComponent(sheetName)}`)
+export async function parseExcelSheet(
+  fileId: string,
+  sheetName: string
+): Promise<ParsedFileInfo> {
+  return request(
+    `/parse/excel/${fileId}/sheet?sheet_name=${encodeURIComponent(
+      sheetName
+    )}`
+  )
 }
