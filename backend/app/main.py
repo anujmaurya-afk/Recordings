@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 import logging.config
-import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,7 +42,16 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+
+    # Local development
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ],
+
+    # Allow Vercel frontend deployments
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
+
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
