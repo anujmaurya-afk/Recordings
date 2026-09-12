@@ -11,7 +11,14 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 
 _settings = get_settings()
-DB_PATH = _settings.database_path
+
+# Vercel's application filesystem is read-only.
+# /tmp is the writable temporary directory available at runtime.
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/recordings.db"
+else:
+    DB_PATH = _settings.database_path
+
 
 DDL = """
 PRAGMA journal_mode=WAL;
@@ -65,11 +72,20 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_records_job_id ON records(job_id);
-CREATE INDEX IF NOT EXISTS idx_records_status ON records(job_id, status);
-CREATE INDEX IF NOT EXISTS idx_records_url ON records(original_url);
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_records_job_id
+    ON records(job_id);
+
+CREATE INDEX IF NOT EXISTS idx_records_status
+    ON records(job_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_records_url
+    ON records(original_url);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_token
+    ON sessions(token);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user
+    ON sessions(user_id);
 """
 
 
@@ -78,23 +94,47 @@ async def get_db():
     """Async context manager that yields a configured aiosqlite connection."""
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
+
         await db.execute("PRAGMA journal_mode=WAL")
         await db.execute("PRAGMA foreign_keys=ON")
+
         yield db
 
 
 async def init_db() -> None:
     """Create database directory and tables if they don't exist."""
+
     db_dir = os.path.dirname(os.path.abspath(DB_PATH))
+
+    # On Vercel this will be /tmp, which is writable.
+    # Locally this will use the directory configured in settings.
     os.makedirs(db_dir, exist_ok=True)
 
     async with aiosqlite.connect(DB_PATH) as db:
+
         await db.executescript(DDL)
+
+        # Add user_id to existing jobs table if it doesn't already exist.
         try:
-            await db.execute("ALTER TABLE jobs ADD COLUMN user_id INTEGER REFERENCES users(id);")
+            await db.execute(
+                """
+                ALTER TABLE jobs
+                ADD COLUMN user_id INTEGER
+                REFERENCES users(id);
+                """
+            )
             await db.commit()
         except Exception:
-            pass  # Already added
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);")
+            # Column already exists.
+            pass
+
+        await db.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_jobs_user_id
+            ON jobs(user_id);
+            """
+        )
+
         await db.commit()
+
     logger.info("Database initialised at %s", DB_PATH)
