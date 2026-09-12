@@ -43,20 +43,29 @@ class Settings(BaseSettings):
     # Auth
     session_expiry_days: int = 30
 
-    # SMTP — email sending
+    # SMTP
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
-    smtp_from: str = ""          # e.g. "Recording Converter <you@gmail.com>"
-    smtp_tls: bool = True        # True = STARTTLS; False = plain SMTP
+    smtp_from: str = ""
+    smtp_tls: bool = True
 
     # CORS
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = (
+        "http://localhost:5173,"
+        "http://localhost:3000"
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        origins = [
+            o.strip()
+            for o in self.cors_origins.split(",")
+            if o.strip()
+        ]
+
+        return origins
 
     @property
     def max_file_size_bytes(self) -> int:
