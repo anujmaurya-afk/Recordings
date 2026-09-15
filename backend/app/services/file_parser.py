@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 _settings = get_settings()
 
 # Temp directory for uploaded files
-UPLOAD_DIR = Path("./data/uploads")
+# UPLOAD_DIR = Path("./data/uploads")
+# Vercel writable temporary directory
+UPLOAD_DIR = Path("/tmp/recording_converter_uploads")
 
 # Regex patterns for auto-detecting URL columns
 _URL_COLUMN_PATTERNS = re.compile(
