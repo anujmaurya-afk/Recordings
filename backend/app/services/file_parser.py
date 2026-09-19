@@ -21,8 +21,9 @@ from app.config import get_settings
 logger = logging.getLogger(__name__)
 _settings = get_settings()
 
-# Temp directory for uploaded files
-UPLOAD_DIR = Path("./data/uploads")
+# Temp directory for uploaded files. On serverless platforms (e.g. Vercel)
+# only /tmp is writable, so default there automatically.
+UPLOAD_DIR = Path("/tmp/uploads") if os.environ.get("VERCEL") else Path("./data/uploads")
 
 # Regex patterns for auto-detecting URL columns
 _URL_COLUMN_PATTERNS = re.compile(

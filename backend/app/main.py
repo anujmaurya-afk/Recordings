@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.models.db import init_db
-from app.api import auth, jobs, uploads
+from app.api import jobs, uploads
 
 settings = get_settings()
 
@@ -58,7 +58,6 @@ async def startup():
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
-app.include_router(auth.router)
 app.include_router(jobs.router)
 app.include_router(uploads.router)
 

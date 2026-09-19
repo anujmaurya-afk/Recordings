@@ -269,3 +269,20 @@ For production deployment:
 3. Build the frontend: `npm run build` → serve the `dist/` folder via nginx or similar
 4. Use a persistent volume for the SQLite database (`DATABASE_PATH`)
 5. Store secrets in environment variables or a secrets manager, not `.env` files
+
+## Deploying to Vercel
+
+This app is set up to deploy as a single Vercel project:
+
+- The React frontend builds to `frontend/dist` and is served as static output.
+- The FastAPI backend runs as a Python serverless function via `api/index.py`, with `vercel.json` rewriting `/api/*` and `/health` to it.
+- Sign-up/login has been removed — the app is open, unauthenticated. Add your own access control (e.g. Vercel password protection, or an auth provider) if you need to restrict who can use it.
+- Uploaded files and job results/database live on `/tmp`, since that's the only writable location in a serverless function. `/tmp` is wiped between cold starts, so **jobs aren't durable** — a job's data can disappear if the function recycles before you download the results. Conversion now runs synchronously within the request (instead of as a background task) so the job is fully processed by the time the response comes back, and the CSV/Excel download link works immediately.
+- Set your AWS/CloudFront environment variables in the Vercel project's Environment Variables settings (same keys as `backend/.env.example`).
+- For very large jobs, keep an eye on your Vercel plan's function execution time limit, since processing now happens inline during the request.
+
+Steps:
+1. Push this repo to GitHub/GitLab/Bitbucket and import it in Vercel.
+2. Vercel will pick up `vercel.json` automatically (build command + output dir + Python function).
+3. Add the environment variables from `backend/.env.example` in the Vercel dashboard.
+4. Deploy.

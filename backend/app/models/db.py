@@ -15,11 +15,9 @@ DB_PATH = _settings.database_path
 
 DDL = """
 PRAGMA journal_mode=WAL;
-PRAGMA foreign_keys=ON;
 
 CREATE TABLE IF NOT EXISTS jobs (
     job_id          TEXT PRIMARY KEY,
-    user_id         INTEGER,
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
     status          TEXT NOT NULL DEFAULT 'pending',
@@ -31,8 +29,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     input_filename  TEXT,
     url_column      TEXT,
     provider        TEXT DEFAULT 'recordings',
-    extra_columns   TEXT DEFAULT '[]',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    extra_columns   TEXT DEFAULT '[]'
 );
 
 CREATE TABLE IF NOT EXISTS records (
@@ -49,27 +46,9 @@ CREATE TABLE IF NOT EXISTS records (
     FOREIGN KEY (job_id) REFERENCES jobs(job_id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS users (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    email           TEXT NOT NULL UNIQUE,
-    password_hash   TEXT NOT NULL,
-    created_at      TEXT NOT NULL,
-    is_active       INTEGER NOT NULL DEFAULT 1
-);
-
-CREATE TABLE IF NOT EXISTS sessions (
-    token           TEXT PRIMARY KEY,
-    user_id         INTEGER NOT NULL,
-    created_at      TEXT NOT NULL,
-    expires_at      TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
 CREATE INDEX IF NOT EXISTS idx_records_job_id ON records(job_id);
 CREATE INDEX IF NOT EXISTS idx_records_status ON records(job_id, status);
 CREATE INDEX IF NOT EXISTS idx_records_url ON records(original_url);
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 """
 
 
@@ -90,11 +69,5 @@ async def init_db() -> None:
 
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript(DDL)
-        try:
-            await db.execute("ALTER TABLE jobs ADD COLUMN user_id INTEGER REFERENCES users(id);")
-            await db.commit()
-        except Exception:
-            pass  # Already added
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);")
         await db.commit()
     logger.info("Database initialised at %s", DB_PATH)

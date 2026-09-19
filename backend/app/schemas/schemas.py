@@ -93,28 +93,3 @@ class UrlValidationResult(BaseModel):
     url: str
     is_valid: bool
     reason: Optional[str] = None
-
-
-# ─── Auth schemas ─────────────────────────────────────────────────────────────
-
-class RegisterRequest(BaseModel):
-    email: str
-    password: str
-
-
-class LoginRequest(BaseModel):
-    email: str
-    password: str
-
-
-class AuthResponse(BaseModel):
-    token: str
-    email: str
-    user_id: int
-
-
-class UserInfo(BaseModel):
-    id: int
-    email: str
-    created_at: str
-

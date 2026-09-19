@@ -34,26 +34,25 @@ async def create_job(
     input_filename: Optional[str] = None,
     url_column: Optional[str] = None,
     extra_columns: Optional[List[str]] = None,
-    user_id: Optional[int] = None,
 ) -> str:
     job_id = generate_job_id()
     now = _now()
     async with get_db() as db:
         await db.execute(
             """
-            INSERT INTO jobs (job_id, user_id, created_at, updated_at, status, total_records,
+            INSERT INTO jobs (job_id, created_at, updated_at, status, total_records,
                               processed_records, successful_records, failed_records,
                               skipped_records, input_filename, url_column, provider, extra_columns)
-            VALUES (?, ?, ?, ?, 'pending', ?, 0, 0, 0, 0, ?, ?, ?, ?)
+            VALUES (?, ?, ?, 'pending', ?, 0, 0, 0, 0, ?, ?, ?, ?)
             """,
             (
-                job_id, user_id, now, now, total_records,
+                job_id, now, now, total_records,
                 input_filename, url_column, provider,
                 json.dumps(extra_columns or []),
             ),
         )
         await db.commit()
-    logger.info("Created job %s for user %s (total=%d, provider=%s)", job_id, user_id, total_records, provider)
+    logger.info("Created job %s (total=%d, provider=%s)", job_id, total_records, provider)
     return job_id
 
 
@@ -66,21 +65,14 @@ async def get_job(job_id: str) -> Optional[Dict[str, Any]]:
             return dict(row)
 
 
-async def list_recent_jobs(limit: int = 10, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
-    """Return the most recent conversion jobs scoped to the current user."""
+async def list_recent_jobs(limit: int = 10) -> List[Dict[str, Any]]:
+    """Return the most recent conversion jobs."""
     async with get_db() as db:
-        if user_id is not None:
-            async with db.execute(
-                "SELECT * FROM jobs WHERE user_id = ? ORDER BY rowid DESC LIMIT ?",
-                (user_id, limit),
-            ) as cur:
-                rows = await cur.fetchall()
-        else:
-            async with db.execute(
-                "SELECT * FROM jobs WHERE user_id IS NULL ORDER BY rowid DESC LIMIT ?",
-                (limit,),
-            ) as cur:
-                rows = await cur.fetchall()
+        async with db.execute(
+            "SELECT * FROM jobs ORDER BY rowid DESC LIMIT ?",
+            (limit,),
+        ) as cur:
+            rows = await cur.fetchall()
         return [dict(r) for r in rows]
 
 

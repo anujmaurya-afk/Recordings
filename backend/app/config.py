@@ -37,19 +37,9 @@ class Settings(BaseSettings):
     # File uploads
     max_file_size_mb: int = 50
 
-    # Database
-    database_path: str = "./data/jobs.db"
-
-    # Auth
-    session_expiry_days: int = 30
-
-    # SMTP — email sending
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_password: str = ""
-    smtp_from: str = ""          # e.g. "Recording Converter <you@gmail.com>"
-    smtp_tls: bool = True        # True = STARTTLS; False = plain SMTP
+    # Database — on serverless platforms (e.g. Vercel) only /tmp is writable,
+    # and it does not persist across invocations, so default there automatically.
+    database_path: str = "/tmp/jobs.db" if os.environ.get("VERCEL") else "./data/jobs.db"
 
     # CORS
     cors_origins: str = "http://localhost:5173"

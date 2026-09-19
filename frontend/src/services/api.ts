@@ -10,13 +10,9 @@ import type {
 const BASE = '/api'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = localStorage.getItem('rc_token')
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(init?.headers as Record<string, string>),
-  }
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
   }
 
   const res = await fetch(`${BASE}${path}`, {
@@ -92,15 +88,11 @@ export async function cancelJob(jobId: string) {
 }
 
 export function getDownloadUrl(jobId: string, format: 'csv' | 'excel') {
-  const token = localStorage.getItem('rc_token') || ''
-  const q = token ? `?token=${encodeURIComponent(token)}` : ''
-  return `${BASE}/jobs/${jobId}/download/${format}${q}`
+  return `${BASE}/jobs/${jobId}/download/${format}`
 }
 
 export function getErrorsDownloadUrl(jobId: string) {
-  const token = localStorage.getItem('rc_token') || ''
-  const q = token ? `?token=${encodeURIComponent(token)}` : ''
-  return `${BASE}/jobs/${jobId}/download/errors${q}`
+  return `${BASE}/jobs/${jobId}/download/errors`
 }
 
 export async function getJobErrors(jobId: string) {
@@ -122,11 +114,8 @@ export async function getJobErrors(jobId: string) {
 export async function parseCsv(file: File): Promise<ParsedFileInfo> {
   const form = new FormData()
   form.append('file', file)
-  const token = localStorage.getItem('rc_token')
-  const headers: Record<string, string> = {}
-  if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${BASE}/parse/csv`, { method: 'POST', body: form, headers })
+  const res = await fetch(`${BASE}/parse/csv`, { method: 'POST', body: form })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.detail ?? `HTTP ${res.status}`)
@@ -138,11 +127,8 @@ export async function parseExcel(file: File, sheetName?: string): Promise<Parsed
   const form = new FormData()
   form.append('file', file)
   if (sheetName) form.append('sheet_name', sheetName)
-  const token = localStorage.getItem('rc_token')
-  const headers: Record<string, string> = {}
-  if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${BASE}/parse/excel`, { method: 'POST', body: form, headers })
+  const res = await fetch(`${BASE}/parse/excel`, { method: 'POST', body: form })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.detail ?? `HTTP ${res.status}`)
